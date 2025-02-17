@@ -1,19 +1,18 @@
 from domain import Account, Customer
+from infrastructure import AccountRepository
 
 class AccountService:
-    def __init__(self):
-        self.accounts = {}
-        self.customers = {}
+    def __init__(self, account_repository):
+        self.account_repository = account_repository
 
     def create_account(self, customer_id, name, email, phone_number, account_number):
         customer = Customer(customer_id, name, email, phone_number)
-        account = Account(len(self.accounts) + 1, customer_id, account_number, 0.0)
-        self.customers[customer_id] = customer
-        self.accounts[account.account_id] = account
+        account = Account(len(self.account_repository.accounts) + 1, customer_id, account_number, 0.0)
+        self.account_repository.save_account(account)
         return account
 
     def make_transaction(self, account_id, amount, transaction_type):
-        account = self.accounts.get(account_id)
+        account = self.account_repository.find_account_by_id(account_id)
         if not account:
             raise ValueError("Account not found")
 
@@ -25,7 +24,10 @@ class AccountService:
             raise ValueError("Invalid transaction type")
     
     def generate_account_statement(self, account_id):
-        account = self.accounts.get(account_id)
+        account = self.account_repository.find_account_by_id(account_id)
         if not account:
             raise ValueError("Account not found")
-        return f"Account {account.account_number} has a balance of {account.get_balance()}."
+
+        statement = f"Account Statement for Account {account.account_number}:\n"
+        statement += "\n".join(account.transactions) if account.transactions else "No transactions found."
+        return statement
